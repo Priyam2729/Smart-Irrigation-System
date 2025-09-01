@@ -1,0 +1,72 @@
+// 🧠 Pin Definitions
+const int moisturePowerPin = A0;   // Power to soil sensor
+const int moistureReadPin  = A1;   // Soil sensor output
+const int tempPin          = A2;   // TMP36 temperature sensor
+const int relayPin         = 6;    // Relay control pin
+const int ledPins[]        = {8, 9, 10, 11, 12}; // LED bar pins
+
+int moisture = 0;
+float temperature = 0.0;
+float humidity = 0.0;
+
+void setup() {
+  pinMode(moisturePowerPin, OUTPUT);
+  pinMode(moistureReadPin, INPUT);
+  pinMode(tempPin, INPUT);
+  pinMode(relayPin, OUTPUT);
+
+  for (int i = 0; i < 5; i++) {
+    pinMode(ledPins[i], OUTPUT);
+  }
+
+  Serial.begin(9600); // For Serial Monitor & Plotter
+}
+
+void loop() {
+  // 🌱 Soil Moisture Reading
+  digitalWrite(moisturePowerPin, HIGH);
+  delay(10);
+  moisture = analogRead(moistureReadPin);
+  digitalWrite(moisturePowerPin, LOW);
+
+  // 🌡️ Temperature from TMP36
+  float voltage = analogRead(tempPin) * (5.0 / 1023.0);
+  temperature = (voltage - 0.5) * 100.0;
+
+  // 💧 Humidity Estimation (proxy from soil moisture)
+  humidity = map(moisture, 700, 300, 20, 80); // Adjust range as needed
+
+  // 🖥️ Serial Monitor + Plotter Output
+  Serial.print("Moisture:");
+  Serial.print(moisture);
+  Serial.print("\tHumidity:");
+  Serial.print(humidity);
+  Serial.print("\tTemperature:");
+  Serial.println(temperature);
+
+  // 💡 LED Bar Logic
+  for (int i = 0; i < 5; i++) {
+    digitalWrite(ledPins[i], LOW);
+  }
+
+  if (moisture < 200) {
+    digitalWrite(ledPins[4], HIGH);
+  } else if (moisture < 400) {
+    digitalWrite(ledPins[3], HIGH);
+  } else if (moisture < 600) {
+    digitalWrite(ledPins[2], HIGH);
+  } else if (moisture < 800) {
+    digitalWrite(ledPins[1], HIGH);
+  } else {
+    digitalWrite(ledPins[0], HIGH);
+  }
+
+  // 🔁 Relay Control Logic
+  if (humidity < 40.0 || temperature > 30.0) {
+    digitalWrite(relayPin, HIGH); // Motor ON
+  } else {
+    digitalWrite(relayPin, LOW);  // Motor OFF
+  }
+
+  delay(1000); // Smooth readings
+}
